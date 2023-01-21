@@ -4,7 +4,10 @@
  * January 20, 2023
  */
 
-use bevy::{input::mouse::MouseMotion, prelude::*};
+use bevy::{
+    input::mouse::MouseMotion,
+    prelude::*
+};
 
 #[derive(Component)]
 pub struct FlyCamera {
@@ -65,9 +68,8 @@ fn forward_vector(rotation: &Quat) -> Vec3 {
 
 fn forward_walk_vector(rotation: &Quat) -> Vec3 {
     let f = forward_vector(rotation);
-    let f_flattened = Vec3::new(f.x, f.y, f.z).normalize();
 
-    f_flattened
+    Vec3::new(f.x, 0.0, f.z).normalize()
 }
 
 // rotate vector 90 degrees to get strafe direction
