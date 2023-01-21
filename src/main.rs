@@ -4,23 +4,19 @@
  * January 19, 2023
  */
 
-use std::{
-    ops::RangeInclusive,
-    sync::{Arc, Mutex}
-};
-
-use std::collections::HashMap;
-use rand::Rng;
-
 use bevy::{
-    // diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    math::{const_ivec3, ivec3, vec3},
     prelude::*,
     render::view::NoFrustumCulling
 };
 
 mod cell_renderer;
 use cell_renderer::*;
+
+mod cells_multithreaded;
+use cells_multithreaded::*;
+
+mod fly_camera;
+use fly_camera::{FlyCamera, FlyCameraPlugin};
 
 mod neighbours;
 use neighbours::MOORE_NEIGHBOURS;
@@ -68,7 +64,7 @@ fn setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut materials
     commands.spawn_bundle(PerspectiveCameraBundle {
         transform: Transform::from_xyz(0.0, 0.0, 15.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
-    });
+    }).insert(FlyCamera::default());
 }
 
 fn main() {
@@ -89,6 +85,11 @@ fn main() {
         bounding: 50
     };
 
-    App::new().add_plugins(DefaultPlugins).add_plugin(CellMaterialPlugin).insert_resource(rule)
-        .add_startup_system(setup).run();
+    App::new().add_plugins(DefaultPlugins)
+        .add_plugin(FlyCameraPlugin)
+        .add_plugin(CellMaterialPlugin)
+        .insert_resource(rule)
+        .add_plugin(CellsMultiThreadedPlugin)
+        .add_startup_system(setup)
+        .run();
 }

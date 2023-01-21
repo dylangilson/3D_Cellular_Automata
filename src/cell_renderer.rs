@@ -17,15 +17,13 @@ use bevy::{
         render_phase::{AddRenderCommand, DrawFunctions, EntityRenderCommand, RenderCommandResult, RenderPhase, SetItemPipeline, TrackedRenderPass},
         render_resource::*,
         renderer::RenderDevice,
-        view::{ComputedVisibility, ExtractedView, Msaa, NoFrustumCulling, Visibility},
+        view::{ExtractedView, Msaa},
         RenderApp,
         RenderStage
     }
 };
 
 use bytemuck::{Pod, Zeroable};
-
-use crate::utils;
 
 #[derive(Component)]
 pub struct InstanceMaterialData(pub Vec<InstanceData>);

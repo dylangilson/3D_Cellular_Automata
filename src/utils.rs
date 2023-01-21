@@ -13,21 +13,21 @@ use crate::{rule::Rule, State};
 
 // wrap around coordinates outside of bounds
 pub fn keep_in_bounds(bounds: i32, position: &mut IVec3) {
-    if position.x < -bounds + 1 {
+    if position.x <= -bounds {
         position.x = bounds - 1;
-    } else if position.x > bounds - 1 {
+    } else if position.x >= bounds {
         position.x = -bounds + 1;
     }
 
-    if position.y < -bounds + 1 {
+    if position.y <= -bounds {
         position.y = bounds - 1;
-    } else if position.y > bounds - 1 {
+    } else if position.y >= bounds {
         position.y = -bounds + 1;
     }
 
-    if position.z < -bounds + 1 {
+    if position.z <= -bounds {
         position.z = bounds - 1;
-    } else if position.z > bounds - 1 {
+    } else if position.z >= bounds {
         position.z = -bounds + 1;
     }
 }

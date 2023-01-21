@@ -9,3 +9,4 @@ edition = "2021"
 bevy = {git = "https://github.com/bevyengine/bevy.git", rev = "b697e73"}
 bytemuck = "*"
 rand = "*"
+futures-lite = "1.12.0"
