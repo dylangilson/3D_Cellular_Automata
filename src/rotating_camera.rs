@@ -30,20 +30,16 @@ impl Default for RotatingCamera {
     }
 }
 
-pub struct UpdateEvent;
+pub fn update_tick(mut cameras: Query<(&mut RotatingCamera, &mut Transform)>) {
+    for (mut camera, mut transform) in cameras.iter_mut() {
+        let delta = 1.0f32;
 
-pub fn update_tick(mut events: EventReader<UpdateEvent>, mut cameras: Query<(&mut RotatingCamera, &mut Transform)>) {
-    for _event in events.iter() {
-        for (mut camera, mut transform) in cameras.iter_mut() {
-            let delta = 1.0f32;
+        camera.rotation += delta * camera.speed;
 
-            camera.rotation += delta * camera.speed;
+        let rotation = Quat::from_axis_angle(Vec3::Y, camera.rotation);
 
-            let rotation = Quat::from_axis_angle(Vec3::Y, camera.rotation);
-
-            transform.translation = camera.center + (rotation * Vec3::Z * camera.distance);
-            transform.look_at(camera.center, Vec3::Y);
-        }
+        transform.translation = camera.center + (rotation * Vec3::Z * camera.distance);
+        transform.look_at(camera.center, Vec3::Y);
     }
 }
 
@@ -51,6 +47,6 @@ pub struct RotatingCameraPlugin;
 
 impl Plugin for RotatingCameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<UpdateEvent>().add_system(update_tick);
+        app.add_system(update_tick);
     }
 }

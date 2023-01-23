@@ -6,7 +6,10 @@
 
 use bevy::{
     core_pipeline::Transparent3d,
-    ecs::system::{lifetimeless::*, SystemParamItem},
+    ecs::{
+        query::QueryItem,
+        system::{lifetimeless::*, SystemParamItem}
+    },
     math::prelude::*,
     pbr::{MeshPipeline, MeshPipelineKey, MeshUniform, SetMeshBindGroup, SetMeshViewBindGroup},
     prelude::*,
@@ -25,6 +28,8 @@ use bevy::{
 
 use bytemuck::{Pod, Zeroable};
 
+pub struct CellStatesChangedEvent;
+
 #[derive(Component)]
 pub struct InstanceMaterialData(pub Vec<InstanceData>);
 
@@ -32,7 +37,7 @@ impl ExtractComponent for InstanceMaterialData {
     type Query = &'static InstanceMaterialData;
     type Filter = ();
 
-    fn extract_component(item: bevy::ecs::query::QueryItem<Self::Query>) -> Self {
+    fn extract_component(item: QueryItem<Self::Query>) -> Self {
         InstanceMaterialData(item.0.clone())
     }
 }
@@ -201,49 +206,3 @@ impl EntityRenderCommand for DrawMeshInstanced {
         RenderCommandResult::Success
     }
 }
-
-// pub struct CellRenderer {
-//     pub bounds: i32,
-//     pub values: Vec<u8>,
-//     pub neighbours: Vec<u8>
-// }
-//
-// impl CellRenderer {
-//     pub fn new() -> CellRenderer {
-//         CellRenderer {
-//             bounds: 0,
-//             values: vec![],
-//             neighbours: vec![]
-//         }
-//     }
-//
-//     pub fn cell_count(&self) -> usize {
-//         (self.bounds * self.bounds * self.bounds) as usize;
-//     }
-//
-//     pub fn set_bounds(&mut self, new_bounds: i32) {
-//         if new_bounds != self.bounds {
-//             let new_count = new_bounds * new_bounds * new_bounds;
-//
-//             self.values.resize(new_count as usize, 0);
-//             self.neighbours.resize(new_count as usize, 0);
-//             self.bounds = new_bounds;
-//         }
-//     }
-//
-//     pub fn clear(&mut self) {
-//         self.values.truncate(0);
-//         self.values.resize(self.cell_count(), 0);
-//         self.neighbours.truncate(0);
-//         self.neighbours.resize(self.cell_count(), 0);
-//     }
-//
-//     pub fn set(&mut self, index: usize, value: u8, neighbours: u8) {
-//         self.values[index] = value;
-//         self.neighbours[index] = neighbours;
-//     }
-//
-//     pub fn set_position(&mut self, position: IVec3, value: u8, neighbours: u8) {
-//         self.set(utils::position_to_index(position, self.bounds), value, neighbours);
-//     }
-// }
