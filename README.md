@@ -1,6 +1,7 @@
 # 3D Cellular Automata
 
-&emsp; &emsp; &emsp; &emsp; &emsp; ![sample1](sample_output/sample1.gif)
+&emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp;
+![sample1](sample_output/sample1.gif)
 
 ## Table of Contents
 - [3D Cellular Automata Simulation](#3d-cellular-automata-simulation)
