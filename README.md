@@ -1,6 +1,6 @@
 # 3D Cellular Automata
 
-![sample1](sample_output/sample1.gif)
+&emsp; &emsp; &emsp; &emsp; &emsp; ![sample1](sample_output/sample1.gif)
 
 ## Table of Contents
 - [3D Cellular Automata Simulation](#3d-cellular-automata-simulation)
@@ -24,8 +24,9 @@ using the Rust programming language and the Bevy game engine
 
 ## Installation
 * Go to the GitHub Release for this project -
-https://github.com/dylangilson/3D_Cellular_Automata/releases/tag/v1.0
-* Download 3D_Cellular_Automata.zip and extract on your PC
+
+&emsp; &emsp; https://github.com/dylangilson/3D_Cellular_Automata/releases/tag/v1.0
++ Download 3D_Cellular_Automata.zip and extract on your PC 
 * IMPORTANT: Always ensure the 'assets' folder is in the same
 directory as the executable
 
