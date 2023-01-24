@@ -247,6 +247,7 @@ impl MultiThreaded {
 }
 
 impl Simulation for MultiThreaded {
+    // step forward in simulation only if user presses 'P'
     fn update(&mut self, input: &Input<KeyCode>, rule: &Rule, task_pool: &TaskPool) {
         if !input.pressed(KeyCode::P) {
             return;
