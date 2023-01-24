@@ -69,14 +69,14 @@ fn main() {
         // survival_rule: Value::new(&[2, 6, 9]),
         // birth_rule: Value::new(&[4, 6, 8, 9, 10]),
         // states: 10,
-        // colour_method: ColourMethod::DistanceToCenter(Color::YELLOW, Color::RED),
+        // colour_method: ColourMethod::DistanceToCenter(Color::ORANGE_RED, Color::RED),
         // neighbour_method: NeighbourMethod::Moore
 
         // VonNeuman pyramid
         // survival_rule: Value::from_range(0..=6),
         // birth_rule: Value::new(&[1, 3]),
         // states: 2,
-        // colour_method: ColourMethod::DistanceToCenter(Color::GREEN, Color::BLUE),
+        // colour_method: ColourMethod::DistanceToCenter(Color::LIME_GREEN, Color::BLUE),
         // neighbour_method: NeighbourMethod::VonNeuman
 
         // fancy pattern
@@ -90,7 +90,7 @@ fn main() {
         // survival_rule: Value::new(&[5, 6, 7, 8]),
         // birth_rule: Value::new(&[6, 7, 9]),
         // states: 10,
-        // colour_method: ColourMethod::DistanceToCenter(Color::GREEN, Color::BLUE),
+        // colour_method: ColourMethod::DistanceToCenter(Color::GOLD, Color::BLUE),
         // neighbour_method: NeighbourMethod::Moore
 
         // swapping structures

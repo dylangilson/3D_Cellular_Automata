@@ -53,8 +53,8 @@ pub fn update(mut this: ResMut<Simulations>, rule: Res<Rule>, input: Res<Input<K
         new_active = Some(0);
     }
 
-    // reset simulation
-    if input.just_pressed(KeyCode::Key1) {
+    // reset simulation when user presses 'R'
+    if input.just_pressed(KeyCode::R) {
         new_active = Some(0);
     }
 
