@@ -4,7 +4,6 @@
  * January 19, 2023
  */
 
-
 use bevy::{
     prelude::*,
     render::view::NoFrustumCulling
@@ -30,8 +29,9 @@ use simulation::{Simulations, SimulationsPlugin};
 
 mod utils;
 
+// setup simulation parameters
 fn setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>, mut simulations: ResMut<Simulations>) {
-    simulations.add_simulation("Multi-threaded", Box::new(MultiThreaded::new()));
+    simulations.add_simulation("Multi-threaded".into(), Box::new(MultiThreaded::new()));
 
     // default mesh, scale is set to 0.0 to hide until a simulation starts
     commands.spawn().insert_bundle((
@@ -68,7 +68,7 @@ fn main() {
         // birth_rule: Value::new(&[4, 6, 8, 9, 10]),
         // states: 10,
         // colour_method: ColourMethod::DistanceToCenter(Color::YELLOW, Color::RED),
-        // neighbour_method: NeighbourMethod::Moore,
+        // neighbour_method: NeighbourMethod::Moore
 
         // VonNeuman pyramid
         // survival_rule: Value::from_range(0..=6),

@@ -17,24 +17,29 @@ use crate::{
 pub trait Simulation: Send + Sync {
     fn update(&mut self, input: &Input<KeyCode>, rule: &Rule, task_pool: &TaskPool);
     fn render(&self, rule: &Rule, data: &mut Vec<InstanceData>);
-    fn reset(&mut self, rule: &Rule);
+    fn reset(&mut self);
     fn cell_count(&self) -> usize;
+    fn set_bounds(&mut self, new_bounds: i32) -> i32;
+    fn bounds(&self) -> i32;
 }
 
 pub struct Simulations {
-    simulations: Vec<(&'static str, Box<dyn Simulation>)>,
-    active_simulation: Option<usize>
+    simulations: Vec<(String, Box<dyn Simulation>)>,
+    active_simulation: Option<usize>,
+    bounds: i32,
 }
 
 impl Simulations {
+    // create new Simulations
     pub fn new() -> Simulations {
         Simulations {
             simulations: vec![],
-            active_simulation: None
+            active_simulation: None,
+            bounds: 64,
         }
     }
 
-    pub fn add_simulation(&mut self, name: &'static str, simulation: Box<dyn Simulation>) {
+    pub fn add_simulation(&mut self, name: String, simulation: Box<dyn Simulation>) {
         self.simulations.push((name, simulation));
     }
 }
@@ -55,11 +60,13 @@ pub fn update(mut this: ResMut<Simulations>, rule: Res<Rule>, input: Res<Input<K
 
     if let Some(new_active) = new_active {
         this.active_simulation = Some(new_active);
-        this.simulations[new_active].1.reset(&rule);
+        this.simulations[new_active].1.reset();
     }
 
     if let Some(active) = this.active_simulation {
+        let bounds = this.bounds;
         let simulation = &mut this.simulations[active].1;
+        let new_bounds = simulation.set_bounds(bounds);
 
         simulation.update(&input, &rule, &task_pool.0);
 
@@ -68,6 +75,8 @@ pub fn update(mut this: ResMut<Simulations>, rule: Res<Rule>, input: Res<Input<K
         instance_data.0.clear();
 
         simulation.render(&rule, &mut instance_data.0);
+
+        this.bounds = new_bounds;
     }
 }
 

@@ -18,6 +18,7 @@ pub struct RotatingCamera {
     pub center: Vec3
 }
 
+// implement Default trait for RotatingCamera
 impl Default for RotatingCamera {
     fn default() -> Self {
         Self {

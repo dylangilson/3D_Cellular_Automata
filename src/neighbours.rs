@@ -22,6 +22,7 @@ impl NeighbourMethod {
     }
 }
 
+// Moore neighbours method constants
 pub static MOORE_NEIGHBOURS: [IVec3; 26] = [
     const_ivec3!([-1, -1, -1]),
     const_ivec3!([0, -1, -1]),
@@ -51,6 +52,7 @@ pub static MOORE_NEIGHBOURS: [IVec3; 26] = [
     const_ivec3!([1, 1, 1])
 ];
 
+// VonNeuman neighbours method constants
 pub static VONNEUMAN_NEIGHBOURS: [IVec3; 6] = [
     const_ivec3!([1, 0, 0]),
     const_ivec3!([-1, 0, 0]),

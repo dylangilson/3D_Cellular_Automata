@@ -20,42 +20,11 @@ use crate::{
     utils::{self}
 };
 
-const CHUNK_SIZE: usize = 32;
-const CHUNK_CELL_COUNT: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
-
-fn index_to_chunk_index(index: usize) -> usize {
-    index / CHUNK_CELL_COUNT
-}
-
-fn index_to_chunk_offset(index: usize) -> usize {
-    index % CHUNK_CELL_COUNT
-}
-
-struct Chunk<Cell>(Vec<Cell>);
-
-impl<Cell: Default> Default for Chunk<Cell> {
-    fn default() -> Self {
-        let cells = (0..CHUNK_CELL_COUNT).map(|_| Cell::default()).collect::<Vec<_>>();
-
-        Chunk(cells)
-    }
-}
-
-impl<Cell> Chunk<Cell> {
-    fn index_to_position(index: usize) -> IVec3 {
-        utils::index_to_position(index, CHUNK_SIZE as i32)
-    }
-
-    fn position_to_index(position: IVec3) -> usize {
-        utils::position_to_index(position, CHUNK_SIZE as i32)
-    }
-
-    fn is_border_position(position: IVec3, offset: i32) -> bool {
-        position.x - offset <= 0 || position.x + offset >= CHUNK_SIZE as i32 - 1
-            || position.y - offset <= 0 || position.y + offset >= CHUNK_SIZE as i32 - 1
-            || position.z - offset <= 0 || position.z + offset >= CHUNK_SIZE as i32 - 1
-    }
-}
+use super::{
+    CHUNK_CELL_COUNT,
+    index_to_chunk_index,
+    index_to_chunk_offset
+};
 
 #[derive(Clone, Copy, Default)]
 struct Cell {
@@ -69,41 +38,32 @@ impl Cell {
     }
 }
 
+type Chunk = super::Chunk<Cell>;
+type Chunks = super::Chunks<Cell>;
+
 pub struct MultiThreaded {
-    chunks: Vec<Chunk<Cell>>,
-    chunk_radius: usize,
-    chunk_count: usize
+    chunks: Chunks
 }
 
 impl MultiThreaded {
+    // create new MultiThreaded
     pub fn new() -> Self {
         MultiThreaded {
-            chunks: vec![],
-            chunk_radius: 0,
-            chunk_count: 0
+            chunks: Chunks::new()
         }
     }
 
-    pub fn set_size(&mut self, new_size: usize) -> usize {
-        let radius = (new_size + CHUNK_SIZE - 1) / CHUNK_SIZE;
-
-        if radius != self.chunk_radius {
-            let count = radius * radius * radius;
-
-            self.chunks.resize_with(count, || Chunk::default());
-            self.chunk_radius = radius;
-            self.chunk_count  = count;
-        }
-
-        self.size()
+    pub fn set_bounds(&mut self, new_bounds: i32) -> i32 {
+        self.chunks.set_bounds(new_bounds)
     }
 
-    pub fn size(&self) -> usize {
-        self.chunk_radius * CHUNK_SIZE
+    pub fn bounds(&self) -> i32 {
+        self.chunks.bounds()
     }
 
+    // get xyz position of center
     pub fn center(&self) -> IVec3 {
-        let center = (self.size() / 2) as i32;
+        let center = self.bounds() / 2;
 
         ivec3(center, center, center)
     }
@@ -111,7 +71,7 @@ impl MultiThreaded {
     pub fn cell_count(&self) -> usize {
         let mut count = 0;
 
-        for chunk in &self.chunks {
+        for chunk in &self.chunks.chunks {
             for cell in chunk.0.iter() {
                 if !cell.is_dead() {
                     count += 1;
@@ -122,36 +82,18 @@ impl MultiThreaded {
         count
     }
 
-    fn index_to_vector(&self, index: usize) -> IVec3 {
-        let chunk = index_to_chunk_index(index);
-        let offset = index_to_chunk_offset(index);
-        let chunk_vector = utils::index_to_position(chunk, self.chunk_radius as i32);
-        let offset_vector = Chunk::<Cell>::index_to_position(offset);
-
-        (CHUNK_SIZE as i32 * chunk_vector) + offset_vector
-    }
-
-    fn vector_to_index(&self, vector: IVec3) -> usize {
-        let chunk_vector = vector / CHUNK_SIZE as i32;
-        let offset_vector = vector % CHUNK_SIZE as i32;
-
-        let chunk = utils::position_to_index(chunk_vector, self.chunk_radius as i32);
-        let offset = Chunk::<Cell>::position_to_index(offset_vector);
-
-        chunk * CHUNK_CELL_COUNT + offset
-    }
-
+    // wrap xyz position around the bounds if it is going out of bounds using helper function
     fn wrap(&self, position: IVec3) -> IVec3 {
-        utils::wrap(position, self.size() as i32)
+        utils::wrap(position, self.bounds())
     }
 
-    fn update_neighbours_chunk(chunk: &mut Chunk<Cell>, rule: &Rule, offset: usize, increment: bool) {
-        let position = Chunk::<Cell>::index_to_position(offset);
+    fn update_neighbours_chunk(chunk: &mut Chunk, rule: &Rule, offset: usize, increment: bool) {
+        let position = Chunk::index_to_position(offset);
 
         for dir in rule.neighbour_method.get_neighbour_iter() {
             let neighbour_position = position + *dir;
 
-            let index = Chunk::<Cell>::position_to_index(neighbour_position);
+            let index = Chunk::position_to_index(neighbour_position);
 
             if increment {
                 chunk.0[index].neighbours += 1;
@@ -161,12 +103,12 @@ impl MultiThreaded {
         }
     }
 
-    fn update_neighbours(&self, chunks: &mut Vec<Chunk<Cell>>, rule: &Rule, index: usize, increment: bool) {
-        let position = self.index_to_vector(index);
+    fn update_neighbours(&self, chunks: &mut Vec<Chunk>, rule: &Rule, index: usize, increment: bool) {
+        let position = self.chunks.index_to_position(index);
 
         for dir in rule.neighbour_method.get_neighbour_iter() {
             let neighbour_position = self.wrap(position + *dir);
-            let index = self.vector_to_index(neighbour_position);
+            let index = self.chunks.position_to_index(neighbour_position);
             let chunk = index_to_chunk_index(index);
             let offset = index_to_chunk_offset(index);
 
@@ -178,15 +120,14 @@ impl MultiThreaded {
         }
     }
 
-    fn update_values_chunk(chunk: &mut Chunk<Cell>, chunk_index: usize, rule: &Rule,
-                           chunk_spawns: &mut Vec<usize>, spawns: &mut Vec<usize>,
+    fn update_values_chunk(chunk: &mut Chunk, chunk_index: usize, rule: &Rule, chunk_spawns: &mut Vec<usize>, spawns: &mut Vec<usize>,
                            chunk_deaths: &mut Vec<usize>, deaths: &mut Vec<usize>) {
         for (offset, cell) in chunk.0.iter_mut().enumerate() {
             if cell.is_dead() {
                 if rule.birth_rule.in_range(cell.neighbours) {
                     cell.value = rule.states;
 
-                    if Chunk::<Cell>::is_border_position(Chunk::<Cell>::index_to_position(offset), 0) {
+                    if Chunk::is_border_position(Chunk::index_to_position(offset), 0) {
                         spawns.push(chunk_index * CHUNK_CELL_COUNT + offset);
                     } else {
                         chunk_spawns.push(offset);
@@ -195,7 +136,7 @@ impl MultiThreaded {
             } else {
                 if cell.value < rule.states || !rule.survival_rule.in_range(cell.neighbours) {
                     if cell.value == rule.states {
-                        if Chunk::<Cell>::is_border_position(Chunk::<Cell>::index_to_position(offset), 0) {
+                        if Chunk::is_border_position(Chunk::index_to_position(offset), 0) {
                             deaths.push(chunk_index * CHUNK_CELL_COUNT + offset);
                         } else {
                             chunk_deaths.push(offset);
@@ -209,9 +150,7 @@ impl MultiThreaded {
     }
 
     pub fn update(&mut self, rule: &Rule, tasks: &TaskPool) {
-        self.set_size(rule.bounding_size as usize);
-
-        let mut chunks = std::mem::take(&mut self.chunks);
+        let mut chunks = std::mem::take(&mut self.chunks.chunks);
 
         // update values
         let mut value_tasks = vec![];
@@ -284,14 +223,15 @@ impl MultiThreaded {
             self.update_neighbours(&mut chunks, rule, index, false);
         }
 
-        self.chunks = chunks;
+        self.chunks.chunks = chunks;
     }
 
+    // spawn noise using given rule
     pub fn spawn_noise(&mut self, rule: &Rule) {
-        let mut chunks = std::mem::take(&mut self.chunks);
+        let mut chunks = std::mem::take(&mut self.chunks.chunks);
 
         utils::spawn_noise_default(self.center(), |position| {
-            let index = self.vector_to_index(self.wrap(position));
+            let index = self.chunks.position_to_index(self.wrap(position));
             let chunk = index_to_chunk_index(index);
             let offset = index_to_chunk_offset(index);
             let cell = &mut chunks[chunk].0[offset];
@@ -302,14 +242,12 @@ impl MultiThreaded {
             }
         });
 
-        self.chunks = chunks;
+        self.chunks.chunks = chunks;
     }
 }
 
 impl Simulation for MultiThreaded {
     fn update(&mut self, input: &Input<KeyCode>, rule: &Rule, task_pool: &TaskPool) {
-        self.set_size(rule.bounding_size as usize);
-
         if !input.pressed(KeyCode::P) {
             return;
         }
@@ -319,27 +257,36 @@ impl Simulation for MultiThreaded {
     }
 
     fn render(&self, rule: &Rule, data: &mut Vec<InstanceData>) {
-        for (chunk_index, chunk) in self.chunks.iter().enumerate() {
+        for (chunk_index, chunk) in self.chunks.chunks.iter().enumerate() {
             for (index, cell) in chunk.0.iter().enumerate() {
                 if cell.is_dead() {
                     continue;
                 }
 
-                let position = self.index_to_vector(chunk_index * CHUNK_CELL_COUNT + index);
+                let position = self.chunks.index_to_position(chunk_index * CHUNK_CELL_COUNT + index);
+
                 data.push(InstanceData {
                     position: (position - self.center()).as_vec3(),
                     scale: 1.0,
-                    colour: rule.colour_method.colour(rule.states, cell.value, cell.neighbours, utils::distance_to_center(position, &rule)).as_rgba_f32()
+                    colour: rule.colour_method.colour(rule.states, cell.value, cell.neighbours, utils::distance_to_center(position, self.bounds())).as_rgba_f32()
                 });
             }
         }
     }
 
-    fn reset(&mut self, _rule: &Rule) {
+    fn reset(&mut self) {
         *self = MultiThreaded::new();
     }
 
     fn cell_count(&self) -> usize {
         self.cell_count()
+    }
+
+    fn set_bounds(&mut self, new_bounds: i32) -> i32 {
+        self.set_bounds(new_bounds)
+    }
+
+    fn bounds(&self) -> i32 {
+        self.bounds()
     }
 }

@@ -28,7 +28,121 @@ use bevy::{
 
 use bytemuck::{Pod, Zeroable};
 
+use crate::utils;
+
 pub struct CellStatesChangedEvent;
+
+const CHUNK_SIZE: usize = 32;
+pub const CHUNK_CELL_COUNT: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+
+// convert index to chunk index
+pub fn index_to_chunk_index(index: usize) -> usize {
+    index / CHUNK_CELL_COUNT
+}
+
+// convert index to chunk offset
+pub fn index_to_chunk_offset(index: usize) -> usize {
+    index % CHUNK_CELL_COUNT
+}
+
+pub struct Chunk<Cell>(pub Vec<Cell>);
+
+// implement Default trait for Chunk
+impl<Cell: Default> Default for Chunk<Cell> {
+    fn default() -> Self {
+        let cells = (0..CHUNK_CELL_COUNT).map(|_| Cell::default()).collect::<Vec<_>>();
+
+        Chunk(cells)
+    }
+}
+
+impl<Cell> Chunk<Cell> {
+    // wrapper function to convert index to xyz position
+    pub fn index_to_position(index: usize) -> IVec3 {
+        utils::index_to_position(index, CHUNK_SIZE as i32)
+    }
+
+    // wrapper function to
+    pub fn position_to_index(position: IVec3) -> usize {
+        utils::position_to_index(position, CHUNK_SIZE as i32)
+    }
+
+    // returns true if xyz position touches the border ; false otherwise
+    pub fn is_border_position(position: IVec3, offset: i32) -> bool {
+        position.x - offset <= 0 || position.x + offset >= CHUNK_SIZE as i32 - 1
+            || position.y - offset <= 0 || position.y + offset >= CHUNK_SIZE as i32 - 1
+            || position.z - offset <= 0 || position.z + offset >= CHUNK_SIZE as i32 - 1
+    }
+}
+
+pub struct Chunks<Cell> {
+    pub chunks: Vec<Chunk<Cell>>,
+    pub chunk_radius: usize,
+    pub chunk_count: usize
+}
+
+impl<Cell> Chunks<Cell> {
+    // create new Chunks
+    pub fn new() -> Chunks<Cell> {
+        Chunks {
+            chunks: vec![],
+            chunk_radius: 0,
+            chunk_count: 0
+        }
+    }
+
+    // get bounds
+    pub fn bounds(&self) -> i32 {
+        (self.chunk_radius * CHUNK_SIZE) as i32
+    }
+
+    // helper function to convert index to xyz position
+    fn index_to_position_ex(index: usize, chunk_radius: usize) -> IVec3 {
+        let chunk = index_to_chunk_index(index);
+        let offset = index_to_chunk_offset(index);
+        let chunk_vector = utils::index_to_position(chunk, chunk_radius as i32);
+        let offset_vector = Chunk::<Cell>::index_to_position(offset);
+
+        (CHUNK_SIZE as i32 * chunk_vector) + offset_vector
+    }
+
+    // helper function to convert xyz position to index
+    fn position_to_index_ex(vector: IVec3, chunk_radius: usize) -> usize {
+        let chunk_vector = vector / CHUNK_SIZE as i32;
+        let offset_vector = vector % CHUNK_SIZE as i32;
+        let chunk = utils::position_to_index(chunk_vector, chunk_radius as i32);
+        let offset = Chunk::<Cell>::position_to_index(offset_vector);
+
+        chunk * CHUNK_CELL_COUNT + offset
+    }
+
+    // convert index to xyz position
+    pub fn index_to_position(&self, index: usize) -> IVec3 {
+        Chunks::<Cell>::index_to_position_ex(index, self.chunk_radius)
+    }
+
+    // convert xyz position to index
+    pub fn position_to_index(&self, position: IVec3) -> usize {
+        Chunks::<Cell>::position_to_index_ex(position, self.chunk_radius)
+    }
+}
+
+impl<Cell: Default> Chunks<Cell> {
+    // set bounds and update self
+    pub fn set_bounds(&mut self, new_bounds: i32) -> i32 {
+        let radius = (new_bounds as usize + CHUNK_SIZE - 1) / CHUNK_SIZE;
+
+        if radius != self.chunk_radius {
+            let count = radius * radius * radius;
+
+            self.chunks.resize_with(count, || Chunk::default());
+            self.chunk_radius = radius;
+            self.chunk_count = count;
+        }
+
+        self.bounds()
+    }
+}
 
 #[derive(Component)]
 pub struct InstanceMaterialData(pub Vec<InstanceData>);
@@ -55,6 +169,8 @@ impl Plugin for CellMaterialPlugin {
             .add_system_to_stage(RenderStage::Prepare, prepare_instance_buffers);
     }
 }
+
+/* the remainder of the code in this file is WebGPU setup */
 
 #[derive(Clone, Copy, Pod, Zeroable)]
 #[repr(C)]
