@@ -4,6 +4,8 @@
  * January 19, 2023
  */
 
+#![windows_subsystem = "windows"]
+
 use bevy::{
     prelude::*,
     render::view::NoFrustumCulling
