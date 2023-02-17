@@ -10,8 +10,8 @@
 - [License](#license)
 
 ## 3D Cellular Automata Simulation 
-A completed implementation of 3D cellular automata written
-using the Rust programming language and the Bevy game engine
+A completed implementation of 3D cellular automata, a 3D version of 'Conway's Game of Life',
+written using the Rust programming language and the Bevy game engine
 
 ## Features
 * Multi-threading
@@ -34,7 +34,7 @@ directory as the executable
 
 ![sample2](sample_output/sample2.gif) ![sample3](sample_output/sample3.gif)
 
-# License
+## License
 Eliseo Copyright 2023
 <br>
 Code released under the [MIT License](LICENSE)
